@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Database API — Concept Notes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: Manrope, sans-serif;
+        background: #f7f4ed;
+        color: #111;
+        margin: 0;
+        padding: 24px;
+        line-height: 1.65;
+      }
+      .wrap {
+        max-width: 920px;
+        margin: 0 auto;
+      }
+      header {
+        background: #111;
+        color: #fff;
+        padding: 18px 24px;
+        border-radius: 14px;
+        margin-bottom: 16px;
+      }
+      header p {
+        color: #d0d0d0;
+        font-size: 13px;
+      }
+      header a {
+        color: #9ee7a7;
+        text-decoration: none;
+      }
+      section {
+        background: #fff;
+        border: 1px solid #e5e0d4;
+        border-radius: 14px;
+        padding: 18px 22px;
+        margin-bottom: 14px;
+      }
+      h1 {
+        margin: 0 0 6px;
+      }
+      h2 {
+        margin: 0 0 12px;
+        font-size: 17px;
+      }
+      h3 {
+        margin: 14px 0 8px;
+        font-size: 14px;
+      }
+      p,
+      li {
+        font-size: 13px;
+        color: #444;
+      }
+      ul {
+        padding-left: 20px;
+      }
+      code {
+        font-family: "JetBrains Mono", monospace;
+        background: #f3efe7;
+        color: #7c3aed;
+        padding: 2px 6px;
+        border-radius: 5px;
+        font-size: 12px;
+      }
+      pre {
+        font-family: "JetBrains Mono", monospace;
+        background: #151515;
+        color: #9ee7a7;
+        padding: 14px;
+        border-radius: 10px;
+        overflow: auto;
+        font-size: 12px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+      th,
+      td {
+        padding: 8px 10px;
+        border-bottom: 1px solid #eee7da;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: #faf8f2;
+      }
+      .tip {
+        background: #f0fdf4;
+        border-left: 3px solid #22c55e;
+        padding: 10px 12px;
+        border-radius: 0 10px 10px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>Database API Concept Notes</h1>
+        <p>
+          Learn how API design meets persistence, transactions, query safety,
+          and performance-aware data access. <a href="/">← Back to Lab</a> ·
+          <a href="/practice.html">Practice Page</a>
+        </p>
+      </header>
+
+      <section>
+        <h2>1. What a Database API is</h2>
+        <p>
+          A <strong>Database API</strong> is the part of a backend that exposes
+          data persistence safely and intentionally. It might use raw SQL, an
+          ORM, a query builder, or a repository pattern — but the goal is the
+          same: turn business actions into correct database reads and writes.
+        </p>
+        <p>
+          The trick is not merely “connect to database.” The real skill is
+          deciding how much query power to expose, how to validate inputs, and
+          how to preserve consistency under load.
+        </p>
+      </section>
+
+      <section>
+        <h2>2. Core building blocks</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Concept</th>
+              <th>Why it matters</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Models/entities</td>
+              <td>
+                Represent domain records like users, products, and orders.
+              </td>
+            </tr>
+            <tr>
+              <td>Relationships</td>
+              <td>Handle one-to-many, many-to-many, and ownership rules.</td>
+            </tr>
+            <tr>
+              <td>Migrations</td>
+              <td>Version schema changes over time.</td>
+            </tr>
+            <tr>
+              <td>Transactions</td>
+              <td>Protect multi-step writes from partial failure.</td>
+            </tr>
+            <tr>
+              <td>Indexes</td>
+              <td>Improve query performance for frequent lookups.</td>
+            </tr>
+            <tr>
+              <td>Pagination</td>
+              <td>Protect APIs from huge scans and payloads.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>3. Query safety</h2>
+        <p>
+          Never build SQL with unchecked string concatenation. Use parameterized
+          queries or ORM-safe bindings.
+        </p>
+        <pre>
+// good
+SELECT * FROM products WHERE category = ? AND price &gt;= ?
+
+// dangerous
+"SELECT * FROM products WHERE category = '" + category + "'"</pre
+        >
+        <p>
+          APIs that expose filtering, sorting, and search must carefully
+          validate allowed fields so “flexible” does not become “oops, free SQL
+          adventure.”
+        </p>
+      </section>
+
+      <section>
+        <h2>4. Transactions and consistency</h2>
+        <p>
+          Whenever several writes must succeed or fail together, use a
+          transaction.
+        </p>
+        <pre>
+BEGIN;
+  INSERT INTO orders (...);
+  INSERT INTO order_items (...);
+  UPDATE inventory SET stock = stock - 1 WHERE product_id = ?;
+COMMIT;
+
+-- if anything fails
+ROLLBACK;</pre
+        >
+
+        <div class="tip">
+          If your API changes money, inventory, booking state, or security
+          records, transaction design is not optional.
+        </div>
+      </section>
+
+      <section>
+        <h2>5. Performance concepts</h2>
+        <ul>
+          <li>Use indexes for common filters and joins.</li>
+          <li>Paginate large collections.</li>
+          <li>Select only needed columns.</li>
+          <li>Watch for N+1 query problems in ORMs.</li>
+          <li>Measure slow queries before guessing at fixes.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>6. ORM vs raw SQL</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Approach</th>
+              <th>Strength</th>
+              <th>Weakness</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>ORM</td>
+              <td>Fast development, model mapping, migrations</td>
+              <td>Can hide bad queries</td>
+            </tr>
+            <tr>
+              <td>Query builder</td>
+              <td>More explicit SQL control</td>
+              <td>More verbose</td>
+            </tr>
+            <tr>
+              <td>Raw SQL</td>
+              <td>Maximum precision and performance</td>
+              <td>More manual plumbing</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>7. Lab goals</h2>
+        <ul>
+          <li>Model entities and their relationships.</li>
+          <li>Add migrations, seeds, and transaction examples.</li>
+          <li>Implement filtering, sorting, pagination, and aggregates.</li>
+          <li>Observe query cost and slow paths.</li>
+        </ul>
+        <p>
+          Current starter endpoints are still <code>GET /api/health</code>,
+          <code>GET /api/lesson</code>, and <code>POST /api/demo</code> until
+          the richer data layer is implemented.
+        </p>
+      </section>
+    </div>
+  </body>
+</html>
